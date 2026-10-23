@@ -1,0 +1,7 @@
+- insert:
+    - id: rdsh-pwa
+      name: "rdsh-pwa"
+      config: {}
+    - id: rdsh-mobile-ux
+      name: "rdsh-mobile-ux"
+      config: {}

@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Aurora sweep — DSH session list</title>
+<style>
+  :root {
+    --bg: #151517;
+    --surface: #1b1b1d;
+    --hover: rgba(255, 255, 255, .08);
+    --label-primary: #f9fafb;
+    --label-secondary: #cfd3d6;
+    --label-tertiary: #adb2b8;
+    --accent: #7aaaff;
+    --aurora-violet: #8b7cff;
+    --aurora-cyan: #5ee7ff;
+    --font-ui: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP",
+      "Yu Gothic UI", Meiryo, sans-serif;
+  }
+
+  *,
+  *::before,
+  *::after { box-sizing: border-box; }
+
+  html { background: var(--bg); }
+
+  body {
+    min-height: 100svh;
+    margin: 0;
+    padding: 36px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--label-primary);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .mock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  /* --- Sidebar shell ------------------------------------------------------ */
+
+  .sidebar {
+    width: 280px;
+    padding: 18px 0 18px 12px;
+    background: var(--surface);
+    border-radius: 16px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, .055),
+      inset 0 1px 0 rgba(255, 255, 255, .035),
+      0 28px 64px -40px rgba(0, 0, 0, .95);
+    overflow: hidden;
+  }
+
+  .sidebar-title {
+    height: 20px;
+    margin: 0 0 10px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    color: var(--label-tertiary);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 20px;
+    letter-spacing: .07em;
+  }
+
+  .session-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* --- Session row ------------------------------------------------------- */
+
+  .session-row {
+    position: relative;
+    isolation: isolate;
+    width: 240px;
+    height: 32px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    border-radius: 12px;
+    background-color: transparent;
+    color: var(--label-primary);
+    font-size: 14px;
+    line-height: 20px;
+    transition: background-color .16s ease;
+  }
+
+  .session-row:hover,
+  .session-row.is-selected { background-color: var(--hover); }
+
+  .slot {
+    width: 16px;
+    height: 20px;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .title {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-width: 0;
+    margin: 0 6px 0 4px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .elapsed {
+    position: relative;
+    z-index: 1;
+    flex: none;
+    color: var(--label-tertiary);
+    font-size: 12px;
+    line-height: 16px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .01em;
+  }
+
+  .row-action {
+    position: relative;
+    z-index: 1;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-left: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--label-tertiary);
+  }
+
+  .row-action svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
+
+  /* --- Aurora sweep ------------------------------------------------------ */
+
+  /*
+   * The animation is deliberately confined to the leading 186px of the row:
+   * the empty slot + the session title. The right edge is masked out before
+   * the elapsed time and the overflow menu, so the row never turns into one
+   * glowing pill. All motion lives in this tiny 186 x 32 box: one background
+   * sweep on the box, one rim sweep and one drifting wash on its pseudos.
+   */
+
+  .aurora {
+    position: absolute;
+    z-index: 0;
+    inset: 0 54px 0 0;
+    border-radius: 12px;
+    pointer-events: none;
+    background-image: linear-gradient(100deg,
+      rgba(122, 170, 255, 0)    0%,
+      rgba(122, 170, 255, .10) 22%,
+      rgba(139, 124, 255, .14) 48%,
+      rgba(94, 231, 255, .11)  72%,
+      rgba(122, 170, 255, 0)  100%);
+    background-size: 220px 100%;
+    background-repeat: repeat;
+    background-position: 0 0;
+    box-shadow:
+      0 0 14px -3px rgba(122, 170, 255, .30),
+      0 0 28px -10px rgba(139, 124, 255, .26),
+      0 0 40px -14px rgba(94, 231, 255, .24);
+    -webkit-mask-image: linear-gradient(90deg,
+      #000 0 72%, rgba(0, 0, 0, .55) 90%, transparent 100%);
+    mask-image: linear-gradient(90deg,
+      #000 0 72%, rgba(0, 0, 0, .55) 90%, transparent 100%);
+    animation: aurora-wash 22s linear infinite;
+  }
+
+  /* Thin aurora rim: one seamless 160px gradient tile, shifted by one tile. */
+  .aurora::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1.2px;
+    border-radius: 12px;
+    background-image: linear-gradient(100deg,
+      rgba(122, 170, 255, 0)    0%,
+      rgba(139, 124, 255, .58) 16%,
+      rgba(94, 231, 255, .62)  36%,
+      rgba(122, 170, 255, .10) 51%,
+      rgba(139, 124, 255, .46) 67%,
+      rgba(94, 231, 255, .56)  85%,
+      rgba(122, 170, 255, 0)  100%);
+    background-size: 160px 100%;
+    background-repeat: repeat;
+    background-position: 0 0;
+    opacity: .92;
+    -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+    -webkit-mask-clip: content-box, border-box;
+    -webkit-mask-composite: xor;
+    mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+    mask-clip: content-box, border-box;
+    mask-composite: exclude;
+    animation: aurora-rim 18s linear infinite;
+  }
+
+  /* Soft wash behind the label; only transform/opacity are animated. */
+  .aurora::after {
+    content: "";
+    position: absolute;
+    inset: 2px 8px 2px 2px;
+    border-radius: 10px;
+    background:
+      radial-gradient(75% 150% at 16% 70%,
+        rgba(122, 170, 255, .34) 0%,
+        rgba(122, 170, 255, 0) 70%),
+      radial-gradient(70% 160% at 54% 30%,
+        rgba(139, 124, 255, .28) 0%,
+        rgba(139, 124, 255, 0) 72%),
+      radial-gradient(60% 140% at 86% 60%,
+        rgba(94, 231, 255, .24) 0%,
+        rgba(94, 231, 255, 0) 74%);
+    opacity: .9;
+    transform: translate3d(-5px, 0, 0);
+    animation: aurora-drift 12s ease-in-out infinite;
+  }
+
+  @keyframes aurora-wash {
+    from { background-position: 0 0; }
+    to   { background-position: -220px 0; }
+  }
+
+  @keyframes aurora-rim {
+    from { background-position: 0 0; }
+    to   { background-position: -160px 0; }
+  }
+
+  @keyframes aurora-drift {
+    0%, 100% {
+      opacity: .74;
+      transform: translate3d(-5px, 0, 0) scale(1);
+    }
+    50% {
+      opacity: .96;
+      transform: translate3d(4px, 0, 0) scale(1.02);
+    }
+  }
+
+  /* Replay affordance: disable for one frame, then let CSS start at zero. */
+  .session-row.is-replaying .aurora,
+  .session-row.is-replaying .aurora::before,
+  .session-row.is-replaying .aurora::after { animation: none; }
+
+  /* --- Mock controls ----------------------------------------------------- */
+
+  .mock-note {
+    width: 280px;
+    padding: 0 2px;
+    color: var(--label-tertiary);
+  }
+
+  .mock-note-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 26px;
+  }
+
+  .mock-name {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--label-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    letter-spacing: .055em;
+  }
+
+  .mock-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--aurora-violet), var(--aurora-cyan));
+    box-shadow: 0 0 9px rgba(122, 170, 255, .5);
+  }
+
+  .replay {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 26px;
+    padding: 0 9px 0 8px;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--label-secondary);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: .01em;
+    cursor: pointer;
+    transition:
+      background-color .16s ease,
+      border-color .16s ease,
+      color .16s ease,
+      transform .12s ease;
+  }
+
+  .replay:hover {
+    border-color: rgba(255, 255, 255, .22);
+    background: var(--hover);
+    color: var(--label-primary);
+  }
+
+  .replay:active { transform: scale(.97); }
+
+  .replay:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .replay svg {
+    width: 10px;
+    height: 10px;
+    flex: none;
+  }
+
+  .mock-desc {
+    margin: 7px 0 0;
+    color: var(--label-tertiary);
+    font-size: 11px;
+    line-height: 1.65;
+    letter-spacing: .005em;
+  }
+
+  .mock-desc span { color: rgba(173, 178, 184, .72); }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .session-row,
+    .replay { transition: none; }
+
+    .aurora {
+      animation: none;
+      background-position: -88px 0;
+    }
+
+    .aurora::before {
+      animation: none;
+      background-position: -54px 0;
+      opacity: .62;
+    }
+
+    .aurora::after {
+      animation: none;
+      opacity: .55;
+      transform: none;
+    }
+
+    .replay:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<main class="mock">
+  <aside class="sidebar" aria-label="Sessions">
+    <h1 class="sidebar-title">Sessions</h1>
+
+    <ul class="session-list">
+      <li class="session-row is-selected" aria-current="true">
+        <span class="slot" aria-hidden="true"></span>
+        <span class="title">DSHのPWA対応とUX向上</span>
+        <span class="elapsed" aria-hidden="true">12m</span>
+        <span class="row-action" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" focusable="false">
+            <circle cx="3" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="8" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="13" cy="8" r="1.3" fill="currentColor"/>
+          </svg>
+        </span>
+      </li>
+
+      <li class="session-row">
+        <span class="slot" aria-hidden="true"></span>
+        <span class="title">セッション一覧の情報設計</span>
+        <span class="elapsed" aria-hidden="true">1h</span>
+        <span class="row-action" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" focusable="false">
+            <circle cx="3" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="8" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="13" cy="8" r="1.3" fill="currentColor"/>
+          </svg>
+        </span>
+      </li>
+
+      <li class="session-row is-running">
+        <span class="aurora" aria-hidden="true"></span>
+        <span class="slot" aria-hidden="true"></span>
+        <span class="title">PWAのオフライン検証</span>
+        <span class="elapsed" aria-hidden="true">0:42</span>
+        <span class="row-action" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" focusable="false">
+            <circle cx="3" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="8" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="13" cy="8" r="1.3" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="sr-only">実行中</span>
+      </li>
+
+      <li class="session-row">
+        <span class="slot" aria-hidden="true"></span>
+        <span class="title">サイドバーのインストール導線</span>
+        <span class="elapsed" aria-hidden="true">3h</span>
+        <span class="row-action" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" focusable="false">
+            <circle cx="3" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="8" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="13" cy="8" r="1.3" fill="currentColor"/>
+          </svg>
+        </span>
+      </li>
+
+      <li class="session-row">
+        <span class="slot" aria-hidden="true"></span>
+        <span class="title">サービスワーカーの更新通知</span>
+        <span class="elapsed" aria-hidden="true">27m</span>
+        <span class="row-action" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" focusable="false">
+            <circle cx="3" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="8" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="13" cy="8" r="1.3" fill="currentColor"/>
+          </svg>
+        </span>
+      </li>
+
+      <li class="session-row">
+        <span class="slot" aria-hidden="true"></span>
+        <span class="title">セーフエリアとキーボード対応</span>
+        <span class="elapsed" aria-hidden="true">1d</span>
+        <span class="row-action" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" focusable="false">
+            <circle cx="3" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="8" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="13" cy="8" r="1.3" fill="currentColor"/>
+          </svg>
+        </span>
+      </li>
+    </ul>
+  </aside>
+
+  <footer class="mock-note">
+    <div class="mock-note-head">
+      <p class="mock-name"><span class="mock-dot" aria-hidden="true"></span>Aurora sweep</p>
+      <button class="replay" id="replay" type="button"
+        aria-label="Aurora sweep を再生" aria-describedby="mock-desc"
+        title="Aurora sweep を再生">
+        <svg viewBox="0 0 10 10" aria-hidden="true" focusable="false">
+          <path d="M2.4 1.6 8.2 5 2.4 8.4Z" fill="currentColor"/>
+        </svg>
+        <span>再生</span>
+      </button>
+    </div>
+    <p class="mock-desc" id="mock-desc">
+      実行中のラベルの周囲だけを、青紫〜シアンの光が<br>
+      ゆっくり流れます。スピナーは使いません。<br>
+      <span>prefers-reduced-motion: reduce では静止表示。</span>
+    </p>
+  </footer>
+
+  <p class="sr-only" id="mock-status" role="status" aria-live="polite"></p>
+</main>
+
+<script>
+  (() => {
+    const row = document.querySelector('.session-row.is-running');
+    const replay = document.querySelector('#replay');
+    const status = document.querySelector('#mock-status');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let raf = 0;
+
+    replay.addEventListener('click', () => {
+      cancelAnimationFrame(raf);
+      row.classList.add('is-replaying');
+      void row.offsetWidth;
+
+      raf = requestAnimationFrame(() => {
+        row.classList.remove('is-replaying');
+        status.textContent = reduce.matches
+          ? 'prefers-reduced-motion が有効なため、静止表示です。'
+          : 'Aurora sweep を再生しました。';
+      });
+    });
+  })();
+</script>
+</body>
+</html>

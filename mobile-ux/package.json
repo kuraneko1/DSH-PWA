@@ -1,0 +1,38 @@
+{
+  "name": "rdsh-mobile-ux",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Phone-width UX for the DSH Web GUI (bundled with rdsh-pwa)",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
+  },
+  "meta": {
+    "title": "DSH モバイルUX",
+    "description": "スマホ幅の DSH Web UI を改善します。セッション一覧をオーバーレイのドロワーにし、設定を1タップで開き、タッチ操作とPWA通知を整えます。"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kuraneko1/DSH-PWA.git",
+    "directory": "mobile-ux"
+  },
+  "homepage": "https://github.com/kuraneko1/DSH-PWA#readme"
+}

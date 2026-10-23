@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark" />
+<title>Breathing label — DSH セッション一覧モーション案</title>
+<style>
+  /* ==========================================================================
+     DSH Web GUI / session list motion mock
+     Row: 240 x 32, radius 12, padding 0 8, font 14
+     Sidebar: 280 wide, left 12 + right 28 = 240px row (実測に合わせる)
+     A: 呼吸するラベル + 左端バー / B: 静かなラベル + 3点ウェーブ
+     ========================================================================== */
+  :root {
+    --label-primary: #f9fafb;
+    --label-secondary: #cfd3d6;
+    --label-tertiary: #adb2b8;
+    --bg: #151517;
+    --hover: rgba(255, 255, 255, .08);
+    --accent: #7aaaff;
+
+    --surface: #1b1b1d;
+    --sidebar-w: 280px;
+    --row-h: 32px;
+    --breath: 5.6s;
+    --wave: 2.4s;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans",
+            "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; }
+
+  body {
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    justify-content: safe center;
+    gap: 36px;
+    padding: 48px 24px 44px;
+    background: var(--bg);
+    color: var(--label-primary);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ---------- page chrome (モックの外側) ---------- */
+  .page-head { max-width: 660px; text-align: center; }
+
+  .eyebrow {
+    margin: 0 0 10px;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    opacity: .9;
+  }
+
+  .page-head h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -.02em;
+  }
+
+  .lede {
+    margin: 10px 0 0;
+    color: var(--label-tertiary);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .specs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .specs li {
+    padding: 4px 9px;
+    border: 1px solid rgba(255, 255, 255, .075);
+    border-radius: 999px;
+    color: var(--label-tertiary);
+    font-size: 10.5px;
+    line-height: 1.2;
+    letter-spacing: .02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- comparison stage ---------- */
+  .stage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 40px;
+  }
+
+  .panel { width: var(--sidebar-w); margin: 0; }
+
+  .caption { margin: 0 0 12px; padding: 0 2px; }
+
+  .caption-head { display: flex; align-items: center; gap: 8px; }
+
+  .chip {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    background: rgba(122, 170, 255, .12);
+    color: #a9c6ff;
+    font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .caption h2 {
+    margin: 0;
+    color: var(--label-primary);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: .005em;
+  }
+
+  .caption-sub {
+    margin: 7px 0 0 26px;
+    color: var(--label-tertiary);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .caption-meta {
+    margin: 2px 0 0 26px;
+    color: #7f848b;
+    font-size: 10.5px;
+    line-height: 1.4;
+    letter-spacing: .02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- sidebar / rows ---------- */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: var(--sidebar-w);
+    /* 280 - 12 (left) - 28 (right) = 240px row */
+    padding: 10px 28px 10px 12px;
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, .045),
+      0 22px 50px rgba(0, 0, 0, .32),
+      0 2px 8px rgba(0, 0, 0, .2);
+  }
+
+  .row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    height: var(--row-h);
+    padding: 0 8px;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--label-primary);
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color .14s ease;
+  }
+
+  .row:hover { background: var(--hover); }
+  .row.is-selected { background: var(--hover); }
+
+  .row:focus-visible {
+    outline: 2px solid rgba(122, 170, 255, .65);
+    outline-offset: -2px;
+  }
+
+  /* 実行中スピナー用の 16px スロット。本モックでは空のまま（スピナー無し） */
+  .slot {
+    display: block;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--label-primary);
+  }
+
+  .title-text {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--label-primary);
+    line-height: 1.2;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .elapsed {
+    flex: 0 0 auto;
+    color: var(--label-tertiary);
+    font-size: 12px;
+    line-height: 1;
+    letter-spacing: .01em;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .action {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--label-tertiary);
+    opacity: .9;
+    cursor: pointer;
+    transition: color .14s ease, opacity .14s ease;
+  }
+
+  /* 16px の見た目を保ったまま、クリック領域だけ少し広げる */
+  .action::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 8px;
+  }
+
+  /* 三点アイコンは SVG を使わず CSS のドットで描く（画像アセット無し） */
+  .action-dots {
+    display: block;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 5px 0 currentColor, 0 10px 0 currentColor;
+    transform: translateY(-5px);
+  }
+
+  .row:hover .action { color: var(--label-secondary); opacity: 1; }
+
+  .action:focus-visible {
+    outline: 2px solid rgba(122, 170, 255, .7);
+    outline-offset: 2px;
+    opacity: 1;
+  }
+
+  /* ---------- A: 左端のアクティビティバー ---------- */
+  .activity-bar {
+    position: absolute;
+    left: 4px;
+    top: 9px;
+    width: 2px;
+    height: 14px;
+    border-radius: 2px;
+    background: rgba(122, 170, 255, .5);
+    opacity: .9;
+    transform-origin: center;
+    pointer-events: none;
+  }
+
+  .panel--a .row.is-running .title-text {
+    animation: breathe-label var(--breath) ease-in-out infinite;
+  }
+
+  .panel--a .row.is-running .activity-bar {
+    animation: breathe-bar var(--breath) ease-in-out infinite;
+  }
+
+  /* 色 + 光。行全体ではなくラベルの文字だけを動かす。
+     drop-shadow は overflow:hidden（省略記号）の外側にも描画される */
+  @keyframes breathe-label {
+    0%, 100% {
+      color: var(--label-primary);
+      filter: drop-shadow(0 0 0 rgba(122, 170, 255, 0));
+    }
+    50% {
+      color: var(--label-secondary);
+      filter: drop-shadow(0 0 7px rgba(122, 170, 255, .26));
+    }
+  }
+
+  /* 高さ・色・グローをラベルと同じ 5.6s で同期 */
+  @keyframes breathe-bar {
+    0%, 100% {
+      transform: scaleY(.62);
+      background-color: rgba(122, 170, 255, .45);
+      box-shadow: 0 0 0 rgba(122, 170, 255, 0);
+    }
+    50% {
+      transform: scaleY(1);
+      background-color: var(--accent);
+      box-shadow: 0 0 6px rgba(122, 170, 255, .45);
+    }
+  }
+
+  /* ---------- B: タイトル末尾の3点ウェーブ ---------- */
+  .panel--b .row.is-running .activity-bar { opacity: 0; }
+
+  .wave {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 0 0 auto;
+    height: 14px;
+  }
+
+  .wave i {
+    display: block;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--label-tertiary);
+    opacity: .45;
+  }
+
+  .panel--b .row.is-running .wave i {
+    animation: dot-wave var(--wave) ease-in-out infinite;
+  }
+
+  .panel--b .row.is-running .wave i:nth-child(2) { animation-delay: .18s; }
+  .panel--b .row.is-running .wave i:nth-child(3) { animation-delay: .36s; }
+
+  @keyframes dot-wave {
+    0%, 60%, 100% {
+      transform: translateY(0);
+      background-color: var(--label-tertiary);
+      opacity: .35;
+    }
+    30% {
+      transform: translateY(-2px);
+      background-color: var(--accent);
+      opacity: 1;
+    }
+  }
+
+  /* ---------- reduced motion: 静的な左端バーだけ残す ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    .panel .row.is-running .title-text {
+      animation: none !important;
+      color: var(--label-primary) !important;
+      filter: none !important;
+    }
+
+    .panel .row.is-running .activity-bar {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: scaleY(1) !important;
+      background-color: var(--accent) !important;
+      box-shadow: none !important;
+    }
+
+    .wave { visibility: hidden !important; }
+
+    .panel--b .row.is-running .wave i { animation: none !important; }
+
+    .row, .action { transition: none; }
+  }
+
+  /* ---------- footer ---------- */
+  .footnote {
+    max-width: 620px;
+    color: #8b9096;
+    font-size: 11px;
+    line-height: 1.75;
+    text-align: center;
+  }
+
+  .footnote p { margin: 0; }
+
+  .footnote code {
+    color: #b3b8be;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 660px) {
+    body { gap: 28px; padding: 32px 20px; }
+    .stage { gap: 30px; }
+    .page-head h1 { font-size: 23px; }
+    .lede { font-size: 12.5px; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="page-head">
+    <p class="eyebrow">DSH Web GUI · Session list · Motion study</p>
+    <h1>Breathing label</h1>
+    <p class="lede">実行中のセッションだけ、ラベルがゆっくり呼吸する。行全体は動かさない。</p>
+    <ul class="specs" aria-label="レイアウト実測値">
+      <li>sidebar 280px</li>
+      <li>row 240 × 32px</li>
+      <li>radius 12px</li>
+      <li>spinner off</li>
+    </ul>
+  </header>
+
+  <main class="stage">
+
+    <!-- ============================ A ============================ -->
+    <figure class="panel panel--a" aria-labelledby="caption-a">
+      <figcaption class="caption">
+        <div class="caption-head">
+          <span class="chip" aria-hidden="true">A</span>
+          <h2 id="caption-a">Breathing label</h2>
+        </div>
+        <p class="caption-sub">ラベルが呼吸 + 左端のアクティビティバー</p>
+        <p class="caption-meta">5.6s · color / glow / bar scaleY</p>
+      </figcaption>
+
+      <div class="sidebar" role="list" aria-label="セッション一覧 A: 呼吸するラベル、3行目が実行中">
+        <div class="row is-selected" role="listitem" tabindex="0" aria-current="true">
+          <span class="slot" aria-hidden="true"></span>
+          <span class="title"><span class="title-text">DSHのPWA対応とUX向上</span></span>
+          <span class="elapsed">8m</span>
+          <button class="action" type="button" aria-label="「DSHのPWA対応とUX向上」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="row" role="listitem" tabindex="0">
+          <span class="slot" aria-hidden="true"></span>
+          <span class="title"><span class="title-text">セッション一覧の情報設計</span></span>
+          <span class="elapsed">48s</span>
+          <button class="action" type="button" aria-label="「セッション一覧の情報設計」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="row is-running" role="listitem" tabindex="0">
+          <span class="slot" aria-hidden="true"></span><!-- 実行中スピナーは本モックでは非表示 -->
+          <span class="sr-only">実行中：</span>
+          <span class="activity-bar" aria-hidden="true"></span>
+          <span class="title"><span class="title-text">実行中表示の改善</span></span>
+          <span class="elapsed">1m 24s</span>
+          <button class="action" type="button" aria-label="「実行中表示の改善」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="row" role="listitem" tabindex="0">
+          <span class="slot" aria-hidden="true"></span>
+          <span class="title"><span class="title-text">オフライン起動の検証</span></span>
+          <span class="elapsed">3m</span>
+          <button class="action" type="button" aria-label="「オフライン起動の検証」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="row" role="listitem" tabindex="0">
+          <span class="slot" aria-hidden="true"></span>
+          <span class="title"><span class="title-text">ダークテーマの調整</span></span>
+          <span class="elapsed">18m</span>
+          <button class="action" type="button" aria-label="「ダークテーマの調整」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="row" role="listitem" tabindex="0">
+          <span class="slot" aria-hidden="true"></span>
+          <span class="title"><span class="title-text">Service Workerの更新</span></span>
+          <span class="elapsed">1h</span>
+          <button class="action" type="button" aria-label="「Service Workerの更新」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ============================ B ============================ -->
+    <figure class="panel panel--b" aria-labelledby="caption-b">
+      <figcaption class="caption">
+        <div class="caption-head">
+          <span class="chip" aria-hidden="true">B</span>
+          <h2 id="caption-b">Quiet label + dot wave</h2>
+        </div>
+        <p class="caption-sub">ラベルは静止、タイトル末尾に3点のウェーブ</p>
+        <p class="caption-meta">2.4s · translateY / opacity / color</p>
+      </figcaption>
+
+      <div class="sidebar" role="list" aria-label="セッション一覧 B: 3点ウェーブ、3行目が実行中">
+        <div class="row is-selected" role="listitem" tabindex="0" aria-current="true">
+          <span class="slot" aria-hidden="true"></span>
+          <span class="title"><span class="title-text">DSHのPWA対応とUX向上</span></span>
+          <span class="elapsed">8m</span>
+          <button class="action" type="button" aria-label="「DSHのPWA対応とUX向上」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="row" role="listitem" tabindex="0">
+          <span class="slot" aria-hidden="true"></span>
+          <span class="title"><span class="title-text">セッション一覧の情報設計</span></span>
+          <span class="elapsed">48s</span>
+          <button class="action" type="button" aria-label="「セッション一覧の情報設計」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="row is-running" role="listitem" tabindex="0">
+          <span class="slot" aria-hidden="true"></span><!-- 実行中スピナーは本モックでは非表示 -->
+          <span class="sr-only">実行中：</span>
+          <span class="activity-bar" aria-hidden="true"></span>
+          <span class="title">
+            <span class="title-text">実行中表示の改善</span>
+            <span class="wave" aria-hidden="true"><i></i><i></i><i></i></span>
+          </span>
+          <span class="elapsed">1m 24s</span>
+          <button class="action" type="button" aria-label="「実行中表示の改善」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="row" role="listitem" tabindex="0">
+          <span class="slot" aria-hidden="true"></span>
+          <span class="title"><span class="title-text">オフライン起動の検証</span></span>
+          <span class="elapsed">3m</span>
+          <button class="action" type="button" aria-label="「オフライン起動の検証」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="row" role="listitem" tabindex="0">
+          <span class="slot" aria-hidden="true"></span>
+          <span class="title"><span class="title-text">ダークテーマの調整</span></span>
+          <span class="elapsed">18m</span>
+          <button class="action" type="button" aria-label="「ダークテーマの調整」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="row" role="listitem" tabindex="0">
+          <span class="slot" aria-hidden="true"></span>
+          <span class="title"><span class="title-text">Service Workerの更新</span></span>
+          <span class="elapsed">1h</span>
+          <button class="action" type="button" aria-label="「Service Workerの更新」の操作">
+            <span class="action-dots" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </figure>
+
+  </main>
+
+  <footer class="footnote">
+    <p><code>prefers-reduced-motion: reduce</code> では呼吸とウェーブを停止し、静的な左端バーだけを表示します。</p>
+    <p>行のホバー / 選択は <code>rgba(255,255,255,.08)</code>。外部アセット・CDN・画像・JS は使っていません。</p>
+  </footer>
+
+</body>
+</html>

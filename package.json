@@ -1,0 +1,63 @@
+{
+  "name": "rdsh-pwa",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "DSH Web GUI をインストール可能なアプリにし、スマホ幅のUXをまとめて改善する統合プラグイン（PWA + mobile UX）",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "sw.js",
+    "cordis.patch.yml",
+    "mobile-ux",
+    "assets/*.png",
+    "assets/*.svg",
+    "docs/*.png",
+    "mockups",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "e2e": "node tests/e2e.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
+  },
+  "meta": {
+    "title": "DSH PWA + モバイルUX",
+    "description": "DSH Web UI をインストール可能なアプリにし、スマホ幅の操作感（ドロワー、設定、通知、入力、ターミナル、モデル選択）をまとめて改善します。"
+  },
+  "author": "kuraneko1",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "pwa",
+    "mobile",
+    "ios",
+    "web-push"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kuraneko1/DSH-PWA.git"
+  },
+  "homepage": "https://github.com/kuraneko1/DSH-PWA#readme",
+  "bugs": {
+    "url": "https://github.com/kuraneko1/DSH-PWA/issues"
+  },
+  "dependencies": {
+    "rdsh-mobile-ux": "file:./mobile-ux"
+  }
+}

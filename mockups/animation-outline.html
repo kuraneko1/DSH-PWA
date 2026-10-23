@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Progress outline — DSH session list</title>
+<style>
+  :root {
+    --label-primary: #f9fafb;
+    --label-secondary: #cfd3d6;
+    --label-tertiary: #adb2b8;
+    --bg: #151517;
+    --hover: rgba(255, 255, 255, .08);
+    --accent: #7aaaff;
+
+    --surface: #1b1b1d;
+    --hairline: rgba(255, 255, 255, .065);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans",
+            "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --loop: 2.8s;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { background: var(--bg); }
+
+  body {
+    min-height: 100svh;
+    margin: 0;
+    background: var(--bg);
+    color: var(--label-primary);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .page {
+    width: min(100%, 760px);
+    min-height: 100svh;
+    margin: 0 auto;
+    padding: clamp(32px, 7vh, 72px) 24px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* ── Page introduction ─────────────────────────────────────────── */
+  .masthead {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto clamp(32px, 6vh, 48px);
+    text-align: center;
+  }
+
+  .kicker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0 0 16px;
+    color: var(--label-tertiary);
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  .kicker__dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px rgba(122, 170, 255, .1);
+  }
+
+  .kicker__sep { color: rgba(255, 255, 255, .22); }
+
+  h1 {
+    margin: 0 0 13px;
+    color: var(--label-primary);
+    font-size: clamp(32px, 5vw, 44px);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -.035em;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .lede {
+    max-width: 490px;
+    margin: 0 auto;
+    color: var(--label-secondary);
+    font-size: 12.5px;
+    line-height: 1.85;
+    letter-spacing: .01em;
+    word-break: auto-phrase;
+    text-wrap: pretty;
+  }
+
+  .nowrap { white-space: nowrap; }
+
+  /* ── Two-up comparison ────────────────────────────────────────── */
+  .board {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    gap: clamp(36px, 7vw, 64px);
+  }
+
+  .variant { width: 280px; }
+
+  .variant-head { margin: 0 0 13px; }
+
+  .variant-meta {
+    min-height: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .variant-badge {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 22px;
+    border: 1px solid rgba(122, 170, 255, .26);
+    border-radius: 7px;
+    background: rgba(122, 170, 255, .07);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  .variant h2 {
+    margin: 0;
+    color: var(--label-primary);
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -.005em;
+  }
+
+  .variant-tech {
+    margin-left: auto;
+    padding: 3px 6px;
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    color: var(--label-tertiary);
+    font-family: var(--mono);
+    font-size: 9px;
+    line-height: 1.2;
+    letter-spacing: .02em;
+    white-space: nowrap;
+  }
+
+  .variant-head p {
+    min-height: 36px;
+    margin: 8px 0 0 30px;
+    color: var(--label-tertiary);
+    font-size: 11px;
+    line-height: 1.65;
+    word-break: auto-phrase;
+    text-wrap: pretty;
+  }
+
+  /* ── Sidebar and session rows ─────────────────────────────────── */
+  .sidebar {
+    width: 280px;
+    padding: 12px 0;
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: 0 22px 60px rgba(0, 0, 0, .22);
+  }
+
+  .session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 12px;
+  }
+
+  .session {
+    position: relative;
+    width: 240px;
+    height: 32px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    border-radius: 12px;
+    color: var(--label-primary);
+    font-size: 14px;
+    line-height: 1;
+    transition: background-color .14s ease;
+  }
+
+  .session:hover,
+  .session[aria-current="true"] {
+    background: var(--hover);
+  }
+
+  .status-slot {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    display: grid;
+    place-items: center;
+  }
+
+  .title {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .title-unit {
+    position: relative;
+    display: block;
+    flex: 0 1 auto;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .title-label {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    line-height: 20px;
+  }
+
+  .elapsed {
+    flex: 0 0 auto;
+    margin-left: 6px;
+    color: var(--label-tertiary);
+    font-size: 12px;
+    line-height: 1;
+    letter-spacing: .015em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .more {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    margin-left: 6px;
+    display: grid;
+    place-items: center;
+    color: var(--label-tertiary);
+  }
+
+  .more svg { display: block; }
+
+  /* ── A / underline flow ───────────────────────────────────────── */
+  .flow-line {
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    bottom: -3px;
+    width: calc(100% + 4px);
+    height: 4px;
+    overflow: visible;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  }
+
+  .flow-track,
+  .flow-runner {
+    fill: none;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .flow-track {
+    stroke: rgba(122, 170, 255, .16);
+    stroke-width: 1px;
+  }
+
+  .flow-runner {
+    stroke: var(--accent);
+    stroke-width: 2px;
+    stroke-dasharray: 28 72;
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 0 4px rgba(122, 170, 255, .95))
+            drop-shadow(0 0 9px rgba(122, 170, 255, .5));
+    animation: flow-dash var(--loop) linear infinite;
+  }
+
+  @keyframes flow-dash {
+    to { stroke-dashoffset: -100; }
+  }
+
+  /* ── B / rounded ring sweep ───────────────────────────────────── */
+  .title-unit--ring::before {
+    content: "";
+    position: absolute;
+    inset: -3px -6px;
+    border: 1px solid rgba(122, 170, 255, .1);
+    border-radius: 9px;
+    pointer-events: none;
+  }
+
+  .ring {
+    position: absolute;
+    inset: -3px -6px;
+    overflow: hidden;
+    padding: 1.5px;
+    border-radius: 9px;
+    pointer-events: none;
+    filter: drop-shadow(0 0 5px rgba(122, 170, 255, .65));
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  .ring-glow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 280px;
+    height: 280px;
+    margin: -140px 0 0 -140px;
+    background: conic-gradient(
+      from 0deg,
+      rgba(122, 170, 255, 0) 0deg,
+      rgba(122, 170, 255, 0) 215deg,
+      rgba(122, 170, 255, .14) 235deg,
+      rgba(140, 185, 255, .68) 268deg,
+      #cfe0ff 292deg,
+      rgba(122, 170, 255, .3) 315deg,
+      rgba(122, 170, 255, 0) 336deg,
+      rgba(122, 170, 255, 0) 360deg
+    );
+    will-change: transform;
+    animation: ring-sweep var(--loop) linear infinite;
+  }
+
+  @keyframes ring-sweep {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── Page footnote ────────────────────────────────────────────── */
+  .footnote {
+    margin: 28px auto 0;
+    color: var(--label-tertiary);
+    font-size: 10.5px;
+    line-height: 1.7;
+    letter-spacing: .015em;
+    text-align: center;
+  }
+
+  .footnote__bar {
+    display: inline-block;
+    width: 2px;
+    height: 9px;
+    margin-right: 6px;
+    border-radius: 999px;
+    background: var(--accent);
+    vertical-align: -1px;
+  }
+
+  .footnote__sep {
+    margin: 0 7px;
+    color: rgba(255, 255, 255, .2);
+  }
+
+  /* ── Static, low-motion fallback ──────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .flow-line,
+    .ring { display: none; }
+
+    .session--running .title::before {
+      content: "";
+      position: absolute;
+      left: -8px;
+      top: 50%;
+      width: 2px;
+      height: 16px;
+      margin-top: -8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(122, 170, 255, .18);
+    }
+
+    .session { transition: none; }
+  }
+
+  @media (max-width: 680px) {
+    .page {
+      justify-content: flex-start;
+      padding-top: 42px;
+      padding-bottom: 42px;
+    }
+
+    .masthead { margin-bottom: 34px; }
+    .board { gap: 40px; }
+    .kicker { font-size: 9px; letter-spacing: .12em; }
+    .lede { max-width: 340px; }
+  }
+
+  @media (max-width: 380px) {
+    .page { padding-left: 12px; padding-right: 12px; }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="masthead">
+      <p class="kicker">
+        <span class="kicker__dot" aria-hidden="true"></span>
+        DSH / Session list
+        <span class="kicker__sep" aria-hidden="true">·</span>
+        Motion study
+      </p>
+      <h1>Progress <span>outline</span></h1>
+      <p class="lede">エージェント実行中を、タイトルの輪郭を流れる光で示す<span class="nowrap">2案。</span>どちらも<span class="nowrap">3行目だけが Running です。</span></p>
+    </header>
+
+    <main class="board" aria-label="タイトル輪郭アニメーションの比較">
+      <section class="variant variant--flow" aria-labelledby="title-a">
+        <header class="variant-head">
+          <div class="variant-meta">
+            <span class="variant-badge" aria-hidden="true">A</span>
+            <h2 id="title-a">Underline flow</h2>
+            <span class="variant-tech" aria-hidden="true">SVG dash</span>
+          </div>
+          <p>タイトル下の細いラインを、光の断片が<span class="nowrap">左から右へ</span>流れます。</p>
+        </header>
+
+        <aside class="sidebar" aria-label="案Aのセッション一覧">
+          <div class="session-list" role="list">
+            <div class="session" role="listitem" aria-current="true">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="title">
+                <span class="title-unit">
+                  <span class="title-label">サイドバーの情報設計</span>
+                </span>
+              </span>
+              <span class="elapsed">12:05</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+
+            <div class="session" role="listitem">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="title">
+                <span class="title-unit">
+                  <span class="title-label">DSHのPWA対応とUX向上</span>
+                </span>
+              </span>
+              <span class="elapsed">18:32</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+
+            <div class="session session--running" role="listitem">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="sr-only">実行中。</span>
+              <span class="title">
+                <span class="title-unit">
+                  <span class="title-label">PWAのオフライン対応</span>
+                  <svg class="flow-line" viewBox="0 0 100 4" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path class="flow-track" d="M1 2H99"></path>
+                    <path class="flow-runner" d="M1 2H99" pathLength="100"></path>
+                  </svg>
+                </span>
+              </span>
+              <span class="elapsed">00:42</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+
+            <div class="session" role="listitem">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="title">
+                <span class="title-unit">
+                  <span class="title-label">認証フローのエラー調査</span>
+                </span>
+              </span>
+              <span class="elapsed">07:11</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+
+            <div class="session" role="listitem">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="title">
+                <span class="title-unit">
+                  <span class="title-label">ストリーミング表示の調整</span>
+                </span>
+              </span>
+              <span class="elapsed">03:48</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+
+            <div class="session" role="listitem">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="title">
+                <span class="title-unit">
+                  <span class="title-label">ダークテーマの視認性</span>
+                </span>
+              </span>
+              <span class="elapsed">26:31</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="variant variant--ring" aria-labelledby="title-b">
+        <header class="variant-head">
+          <div class="variant-meta">
+            <span class="variant-badge" aria-hidden="true">B</span>
+            <h2 id="title-b">Rounded ring sweep</h2>
+            <span class="variant-tech" aria-hidden="true">conic mask</span>
+          </div>
+          <p>タイトル領域の角丸ボーダーに沿って、光が<span class="nowrap">時計回りに</span>周回します。</p>
+        </header>
+
+        <aside class="sidebar" aria-label="案Bのセッション一覧">
+          <div class="session-list" role="list">
+            <div class="session" role="listitem" aria-current="true">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="title">
+                <span class="title-unit">
+                  <span class="title-label">サイドバーの情報設計</span>
+                </span>
+              </span>
+              <span class="elapsed">12:05</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+
+            <div class="session" role="listitem">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="title">
+                <span class="title-unit">
+                  <span class="title-label">DSHのPWA対応とUX向上</span>
+                </span>
+              </span>
+              <span class="elapsed">18:32</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+
+            <div class="session session--running" role="listitem">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="sr-only">実行中。</span>
+              <span class="title">
+                <span class="title-unit title-unit--ring">
+                  <span class="title-label">PWAのオフライン対応</span>
+                  <span class="ring" aria-hidden="true">
+                    <span class="ring-glow"></span>
+                  </span>
+                </span>
+              </span>
+              <span class="elapsed">00:42</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+
+            <div class="session" role="listitem">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="title">
+                <span class="title-unit">
+                  <span class="title-label">認証フローのエラー調査</span>
+                </span>
+              </span>
+              <span class="elapsed">07:11</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+
+            <div class="session" role="listitem">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="title">
+                <span class="title-unit">
+                  <span class="title-label">ストリーミング表示の調整</span>
+                </span>
+              </span>
+              <span class="elapsed">03:48</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+
+            <div class="session" role="listitem">
+              <span class="status-slot" aria-hidden="true"></span>
+              <span class="title">
+                <span class="title-unit">
+                  <span class="title-label">ダークテーマの視認性</span>
+                </span>
+              </span>
+              <span class="elapsed">26:31</span>
+              <span class="more" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" focusable="false">
+                  <circle cx="8" cy="3.25" r="1.15"></circle>
+                  <circle cx="8" cy="8" r="1.15"></circle>
+                  <circle cx="8" cy="12.75" r="1.15"></circle>
+                </svg>
+              </span>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <p class="footnote">
+      <span class="footnote__bar" aria-hidden="true"></span>3行目のみ Running
+      <span class="footnote__sep" aria-hidden="true">·</span>ホバー／選択状態あり
+      <span class="footnote__sep" aria-hidden="true">·</span>reduced-motion では静的な縦バー
+    </p>
+  </div>
+</body>
+</html>
